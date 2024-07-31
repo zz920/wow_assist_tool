@@ -8,12 +8,9 @@ import matplotlib.pyplot as plt
 
 import os
 
-from ..log import logger
+from src.log import logger
+from src.config import *
 
-TMP_IMG_DIR = '../img/tmp/'
-FISH_POINT_IMG = TMP_IMG_DIR + 'fish_point.png'
-FISH_ONBOARD_IMG = TMP_IMG_DIR + 'onboard.png'
-FISH_ONBOARD_CMP_IMG = TMP_IMG_DIR + 'onboard_cmp.png'
 
 class FishDetector:
 
@@ -51,9 +48,15 @@ class FishDetector:
             return True
         return False
 
-    def detect_fish_point(self):
+    def _save_screenshot(self, location, **kwargs):
+        screen_shot = pyautogui.screenshot(location, **kwargs)
+        try:
+            screen_shot.save(location)
+        except:
+            pass
 
-        pyautogui.screenshot(FISH_POINT_IMG, region=(self.left_top[0], self.left_top[1], self.width, self.height))
+    def detect_fish_point(self):
+        self._save_screenshot(FISH_POINT_IMG, region=(self.left_top[0], self.left_top[1], self.width, self.height))
 
         image = cv2.imread(FISH_POINT_IMG)
 
@@ -74,7 +77,7 @@ class FishDetector:
                 if y1 > y2:
                     x1, y1, x2, y2 = x2, y2, x1, y1
 
-                if abs(y1 - y2) < 30 or abs(y1 - y2) / max(abs(x1 - x2), 0.1) < 1 :
+                if abs(y1 - y2) < 30 or abs(y1 - y2) / max(abs(x1 - x2), 0.1) < 1:
                     continue
 
                 if self.debug:
@@ -98,7 +101,6 @@ class FishDetector:
 
         return -1, -1
 
-
     def detect_onbard(self, fish_point):
 
         self._clean()
@@ -111,14 +113,13 @@ class FishDetector:
 
         while time.time() - start < self.fish_bar_duration:
             x, y = fish_point
-
-            screen_shot = pyautogui.screenshot(FISH_ONBOARD_IMG, region=(int(x - 30), int(y - 30), 60, 60))
+            self._save_screenshot(FISH_ONBOARD_IMG, region=(int(x - 30), int(y - 30), 60, 60))
 
             if not os.path.exists(FISH_ONBOARD_IMG):
                 logger.error("Img Not Saved!")
                 break
 
-            if not os.path.exists(FISH_ONBOARD_CMP_IMG) :
+            if not os.path.exists(FISH_ONBOARD_CMP_IMG):
                 self._roll()
                 continue
 
@@ -138,7 +139,6 @@ class FishDetector:
             time.sleep(0.1)
 
         return False
-
 
 
 if __name__ == '__main__':
