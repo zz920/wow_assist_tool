@@ -16,6 +16,8 @@ class AutoFishPlugin(BasePlugin):
         self._executionCnt = 0
         self._start_time = 0
 
+        self._bait_round = 0
+
         super().__init__()
 
     def focus_on_window(self):
@@ -24,6 +26,12 @@ class AutoFishPlugin(BasePlugin):
         self.mouseController.left_click()
 
     def start_fishing(self):
+
+        if int(time.time() - self._start_time) > self._bait_round * 590:
+            self.keyPressController.press('2')
+            time.sleep(10)
+            self._bait_round += 1
+
         # press 1 start fishing
         self.keyPressController.press('1')
         self.mouseController.move_to_random_position((1750, 780))
@@ -57,6 +65,7 @@ class AutoFishPlugin(BasePlugin):
         self._successCnt = 0
         self._start_time = time.time()
         self._executionCnt = 0
+        self._bait_round = 0
 
     def run(self, context):
         self.logger.info("Plugin: {} running...".format(self.name))
@@ -85,9 +94,9 @@ class AutoFishPlugin(BasePlugin):
 
         self.logger.info("Plugin: {} end.".format(self.name))
 
-        self.summary(None, "")
+        self.summary(None)
 
-    def summary(self, context, message):
+    def summary(self, context):
         self.logger.info("AutoFishPlugin Summary: ")
         self.logger.info("      Execute Count: {}".format(self._executionCnt))
         self.logger.info("      Success Count: {}".format(self._successCnt))
