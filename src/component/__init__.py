@@ -1,1 +1,0 @@
-from FishDetect import FishDetector
