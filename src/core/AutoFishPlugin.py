@@ -88,7 +88,7 @@ class AutoFishPlugin(BasePlugin):
         self.summary(None, "")
 
     def summary(self, context, message):
-        self.logger.info("AutoFishPlugin Summary: \n")
-        self.logger.info("      Execute Count: {}\n".format(self._executionCnt))
-        self.logger.info("      Success Count: {}\n".format(self._successCnt))
+        self.logger.info("AutoFishPlugin Summary: ")
+        self.logger.info("      Execute Count: {}".format(self._executionCnt))
+        self.logger.info("      Success Count: {}".format(self._successCnt))
         self.logger.info("      Total Time: {.2f} sec\n".format(time.time() - self._start_time))

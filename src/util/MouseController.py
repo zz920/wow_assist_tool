@@ -19,7 +19,7 @@ class MouseController:
         return mouse_x, mouse_y, abs(point[0] - mouse_x) > self._offset or abs(point[1] - mouse_y) > self._offset
 
     def is_out_of_screen(self, point):
-        return (len(point) == 2
+        return not (len(point) == 2
                 and point[0] < self.screen_x
                 and point[1] < self.screen_y
                 and point[0] > 0 and point[1] > 0)

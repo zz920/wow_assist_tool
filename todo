@@ -1,2 +1,3 @@
 1. use multithread/frame to split judge thread and operation thread
 2. use pywin32 to simulate the mouse movement without block usage
+3. on Press some hot key to stop the whole running task

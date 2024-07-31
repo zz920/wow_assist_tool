@@ -19,27 +19,35 @@ class FishDetector:
         self.width, self.height = (1000, 600)
         self.debug = False
         self.fish_bar_duration = 12
+        self.time_step = 0.1
 
         self._err_sum = 0
         self._err_cnt = 0
 
     def _clean(self):
+        self._err_sum = 0
+        self._err_cnt = 0
+
         try:
             os.remove(FISH_ONBOARD_IMG)
-            os.remove(FISH_ONBOARD_CMP_IMG)
-
-            self._err_sum = 0
-            self._err_cnt = 0
         except:
-            # logger.error('Clean Img File Error.')
-            None
+            pass
+
+        try:
+            os.remove(FISH_ONBOARD_CMP_IMG)
+        except:
+            pass
 
     def _roll(self):
         try:
-            os.remove(FISH_ONBOARD_IMG)
+            os.remove(FISH_ONBOARD_CMP_IMG)
+        except:
+            pass
+
+        try:
             os.rename(FISH_ONBOARD_IMG, FISH_ONBOARD_CMP_IMG)
         except:
-            None
+            logger.error("Can't rename {} to {}".format(FISH_ONBOARD_IMG, FISH_ONBOARD_CMP_IMG))
 
     def judge_fish(self, err):
         self._err_sum += err
@@ -119,24 +127,21 @@ class FishDetector:
                 logger.error("Img Not Saved!")
                 break
 
-            if not os.path.exists(FISH_ONBOARD_CMP_IMG):
-                self._roll()
-                continue
+            if os.path.exists(FISH_ONBOARD_CMP_IMG):
+                src_img = cv2.imread(FISH_ONBOARD_IMG, cv2.IMREAD_GRAYSCALE)
+                cmp_img = cv2.imread(FISH_ONBOARD_CMP_IMG, cv2.IMREAD_GRAYSCALE)
 
-            src_img = cv2.imread(FISH_ONBOARD_IMG, cv2.IMREAD_GRAYSCALE)
-            cmp_img = cv2.imread(FISH_ONBOARD_CMP_IMG, cv2.IMREAD_GRAYSCALE)
+                err = np.sum((src_img.astype("float") - cmp_img.astype("float")) ** 2)
+                err /= float(src_img.shape[0] * cmp_img.shape[1])
 
-            err = np.sum((src_img.astype("float") - cmp_img.astype("float")) ** 2)
-            err /= float(src_img.shape[0] * cmp_img.shape[1])
+                if self.debug:
+                    print("Bar Time: {:.2f} Error Rate: {:.2f}".format(time.time() - start, err))
 
-            if self.debug:
-                print("Bar Time: {:.2f} Error Rate: {:.2f}".format(time.time() - start, err))
-
-            if self.judge_fish(err):
-                return True
+                if self.judge_fish(err):
+                    return True
 
             self._roll()
-            time.sleep(0.1)
+            time.sleep(self.time_step)
 
         return False
 
