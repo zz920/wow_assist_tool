@@ -2,7 +2,9 @@
 img/tmp/
 .idea/misc.xml
 .idea/wowautogamer.iml
+.idea/
 log/*.log
+.venv/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
