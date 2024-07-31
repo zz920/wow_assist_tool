@@ -1,0 +1,2 @@
+1. use multithread/frame to split judge thread and operation thread
+2. use pywin32 to simulate the mouse movement without block usage
