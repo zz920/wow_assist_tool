@@ -1,0 +1,1 @@
+1. use multithread/frame to split judge thread and operation thread

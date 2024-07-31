@@ -1,3 +1,4 @@
+import logging
 import time
 
 import cv2
@@ -7,6 +8,13 @@ import matplotlib.pyplot as plt
 
 import os
 
+from ..log import logger
+
+TMP_IMG_DIR = '../img/tmp/'
+FISH_POINT_IMG = TMP_IMG_DIR + 'fish_point.png'
+FISH_ONBOARD_IMG = TMP_IMG_DIR + 'onboard.png'
+FISH_ONBOARD_CMP_IMG = TMP_IMG_DIR + 'onboard_cmp.png'
+
 class FishDetector:
 
     def __init__(self):
@@ -15,11 +23,39 @@ class FishDetector:
         self.debug = False
         self.fish_bar_duration = 12
 
+        self._err_sum = 0
+        self._err_cnt = 0
+
+    def _clean(self):
+        try:
+            os.remove(FISH_ONBOARD_IMG)
+            os.remove(FISH_ONBOARD_CMP_IMG)
+
+            self._err_sum = 0
+            self._err_cnt = 0
+        except:
+            # logger.error('Clean Img File Error.')
+            None
+
+    def _roll(self):
+        try:
+            os.remove(FISH_ONBOARD_IMG)
+            os.rename(FISH_ONBOARD_IMG, FISH_ONBOARD_CMP_IMG)
+        except:
+            None
+
+    def judge_fish(self, err):
+        self._err_sum += err
+        self._err_cnt += 1
+        if self._err_sum > 0 and self._err_cnt > 10 and err > self._err_sum / self._err_cnt * 8:
+            return True
+        return False
+
     def detect_fish_point(self):
 
-        screen_shot = pyautogui.screenshot('fish_point.png', region=(self.left_top[0], self.left_top[1], self.width, self.height))
+        pyautogui.screenshot(FISH_POINT_IMG, region=(self.left_top[0], self.left_top[1], self.width, self.height))
 
-        image = cv2.imread('fish_point.png')
+        image = cv2.imread(FISH_POINT_IMG)
 
         # 转换为灰度图像
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -44,8 +80,6 @@ class FishDetector:
                 if self.debug:
                     cv2.line(image, (x1, y1), (x2, y2), (0, 255, 0), 2)
 
-                # print("find line from: ({}), to ({})".format((x1, y1), (x2, y2)))
-
                 if top_line is None or top_line[0][1] > y1:
                     top_line = ((x1, y1), (x2, y2))
 
@@ -56,65 +90,51 @@ class FishDetector:
             plt.show()
 
         if top_line is not None and top_line[0][1] > self.left_top[1] + 10:
+
             if self.debug:
-                print("top line from: ({}), to ({})".format(top_line[0], top_line[1]))
+                logger.debug("Top Line {} - {}".format(top_line[0], top_line[1]))
+
             return top_line[0][0] + self.left_top[0], top_line[0][1] + self.left_top[1]
 
         return -1, -1
 
 
     def detect_onbard(self, fish_point):
-        try:
-            os.remove("onboard_cmp.png")
-        except(Exception):
-            None
+
+        self._clean()
 
         start = time.time()
 
         if fish_point[0] < 0 or fish_point[1] < 0:
-            print("point invalid! {}".format(fish_point))
+            logging.warn("Fish Point {} Invalid!".format(fish_point))
             return False
-
-        err_sum = 0
-        cnt = 0
-        avg_err = 0
 
         while time.time() - start < self.fish_bar_duration:
             x, y = fish_point
 
-            screen_shot = pyautogui.screenshot('onboard.png', region=(int(x - 30), int(y - 30), 60, 60))
+            screen_shot = pyautogui.screenshot(FISH_ONBOARD_IMG, region=(int(x - 30), int(y - 30), 60, 60))
 
-            if not os.path.exists("./onboard.png"):
-                print("Fatal error, screen shot not saved")
+            if not os.path.exists(FISH_ONBOARD_IMG):
+                logger.error("Img Not Saved!")
                 break
 
-            if os.path.exists("./onboard.png") and not os.path.exists("./onboard_cmp.png") :
-                os.rename("onboard.png", "onboard_cmp.png")
-                # print("cmp file not exist")
+            if not os.path.exists(FISH_ONBOARD_CMP_IMG) :
+                self._roll()
                 continue
 
-            src_img = cv2.imread('onboard.png', cv2.IMREAD_GRAYSCALE)
-            cmp_img = cv2.imread('onboard_cmp.png', cv2.IMREAD_GRAYSCALE)
+            src_img = cv2.imread(FISH_ONBOARD_IMG, cv2.IMREAD_GRAYSCALE)
+            cmp_img = cv2.imread(FISH_ONBOARD_CMP_IMG, cv2.IMREAD_GRAYSCALE)
 
             err = np.sum((src_img.astype("float") - cmp_img.astype("float")) ** 2)
             err /= float(src_img.shape[0] * cmp_img.shape[1])
 
             if self.debug:
-                print("{:.2f} Error: {:.2f}".format(time.time() - start, err))
+                print("Bar Time: {:.2f} Error Rate: {:.2f}".format(time.time() - start, err))
 
-            if err_sum > 0 and cnt > 10 and err > err_sum / cnt * 8:
-            # if err_sum > 500:
+            if self.judge_fish(err):
                 return True
 
-            err_sum += err
-            cnt += 1
-
-            try:
-                os.remove("onboard_cmp.png")
-                os.rename("onboard.png", "onboard_cmp.png")
-            except(Exception):
-                None
-
+            self._roll()
             time.sleep(0.1)
 
         return False

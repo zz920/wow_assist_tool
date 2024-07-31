@@ -1,11 +1,9 @@
-import threading
 import time
-
 import random
+from log import logger
 
-import KeyPressController
-import MouseController
-import FishDetect
+from util import KeyPressController, MouseController
+from component import FishDetect
 
 
 if __name__ == "__main__":
@@ -14,9 +12,6 @@ if __name__ == "__main__":
     keyboard_controller = KeyPressController.KeyPressController()
 
     fish_detect = FishDetect.FishDetector()
-
-    # thread = threading.Thread(target=mouse_controller.report())
-    # thread.start()
 
     # focus on the first screen
     mouse_controller.move(500, 5)
